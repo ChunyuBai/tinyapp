@@ -5,10 +5,19 @@ const PORT = 8080; // default port 8080
 //Installing and Setting Up EJS
 app.set("view engine", "ejs");
 
+
+app.use(express.urlencoded({ extended: true }));
+
+
+// create a url database
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+//Generate a Random Short URL ID
+const generateRandomString = () => {
+  return Math.random().toString(20).substring(2,6);
+}
 
 // Home page says Hello
 app.get("/", (req, res) => {
@@ -48,9 +57,21 @@ app.get("/set", (req, res) => {
 
 
 
-//
+//Add a GET Route to Show the Form
  app.get("/urls/new", (req, res) => {
   res.render("urls_new");
+});
+
+//Add a POST Route to Receive the Form Submission
+app.post("/urls", (req, res) => {
+  const shortURL = generateRandomString();
+  // urldabase = { 'abc123': 'facebook.com"}
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL;
+  console.log(urlDatabase);
+  console.log(req.body); // Log the POST request body to the console
+  res.send("ok")// Respond with 'Ok' (we will replace this)
+  // res.redirect(`/urls/${shortURL}`); 
 });
 
 //Adding a Second Route and Template
@@ -59,6 +80,8 @@ app.get("/set", (req, res) => {
   const templateVars = { id: id, longURL: urlDatabase[id]};
   res.render("urls_show", templateVars);
 });
+
+
 
 
 app.listen(PORT, () => {
