@@ -46,6 +46,13 @@ app.get("/set", (req, res) => {
   res.send(`a = ${a}`);
  });
 
+
+
+//
+ app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
 //Adding a Second Route and Template
  app.get("/urls/:id", (req, res) => {
   const id = req.params.id
