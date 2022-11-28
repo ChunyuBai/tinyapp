@@ -35,6 +35,7 @@ app.get("/hello", (req, res) => {
   res.render("hello_world", templateVars);
 });
 
+
 //scope practice
 app.get("/set", (req, res) => {
   const a = 1;
@@ -44,6 +45,13 @@ app.get("/set", (req, res) => {
  app.get("/fetch", (req, res) => {
   res.send(`a = ${a}`);
  });
+
+//Adding a Second Route and Template
+ app.get("/urls/:id", (req, res) => {
+  const id = req.params.id
+  const templateVars = { id: id, longURL: urlDatabase[id]};
+  res.render("urls_show", templateVars);
+});
 
 
 app.listen(PORT, () => {
