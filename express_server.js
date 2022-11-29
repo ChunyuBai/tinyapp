@@ -70,6 +70,15 @@ app.post("/urls", (req, res) => {
   res.redirect('/urls/:id');//Redirect After Form Submission
 });
 
+app.post("/urls/:id/delete", (req, res) => {
+  const shortURL = req.params.id;
+  // urldabase = { 'abc123': 'facebook.com"}
+  delete urlDatabase[shortURL]
+  res.redirect('/urls');//Redirect After Form Submission
+});
+
+
+
 //Adding a Second Route and Template
  app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
