@@ -65,8 +65,7 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
   console.log(urlDatabase);
-  console.log(req.body); // Log the POST request body to the console
-  res.send("ok")// Respond with 'Ok' (we will replace this) 
+  console.log(req.body); // Log the POST request body to the console// Respond with 'Ok' (we will replace this) 
   res.redirect('/urls/:id');//Redirect After Form Submission
 });
 
@@ -77,14 +76,13 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect('/urls');//Redirect After Form Submission
 });
 
-//Edit our url
-// add.post("/urls/:id/edit",(req,res) => {
-//   const shortURL = req.params.id;
-      
-//   res.redirect('/urls');
-// })
-
-
+//Edit button takes to edit page
+app.post("/urls/:id/edit", (req, res) => {
+  const shortURL = req.params.id;
+  const longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL;
+  res.redirect('/urls');//Redirect After Form Submission
+});
 //Adding a Second Route and Template
  app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
