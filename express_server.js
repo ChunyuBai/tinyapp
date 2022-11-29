@@ -1,4 +1,5 @@
 const express = require("express");
+const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -7,6 +8,7 @@ app.set("view engine", "ejs");
 
 
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());//cookie use
 
 
 // create a url database
@@ -30,13 +32,17 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { 
+    username: req.cookies["userName"],
+    urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 //sending response with HTML code
 app.get("/hello", (req, res) => {
-  const templateVars = { greeting: "Hello World!" };
+  const templateVars = {
+    username: req.cookies["userName"],
+ greeting: "Hello World!" };
   res.render("hello_world", templateVars);
 });
 
@@ -65,7 +71,7 @@ app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
   console.log(urlDatabase);
-  console.log(req.body); // Log the POST request body to the console// Respond with 'Ok' (we will replace this) 
+  console.log(req.body); // Log the POST request body to the console/
   res.redirect('/urls/:id');//Redirect After Form Submission
 });
 
@@ -75,6 +81,24 @@ app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[shortURL]
   res.redirect('/urls');//Redirect After Form Submission
 });
+
+
+//login a user
+app.post("/login", (req, res) => {
+  // const username = req.body.username;
+  const {username} = req.body;
+  // Set-Cookie: userName = userName;
+  res.cookie('userName',username)
+  // console.log(userName)
+  console.log('Cookies: ', req.cookies["userName"])
+  res.redirect('/urls');//Redirect After Form Submission
+});
+//logout a user
+app.post("/logout",(req, res) => {
+  res.clearCookie("userName");
+  res.redirect('/urls');
+})
+
 
 //Edit button takes to edit page
 app.post("/urls/:id/edit", (req, res) => {
@@ -86,7 +110,8 @@ app.post("/urls/:id/edit", (req, res) => {
 //Adding a Second Route and Template
  app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
-  const templateVars = { id: id, longURL: urlDatabase[id]};
+  const templateVars = { username: req.cookies["userName"],
+    id: id, longURL: urlDatabase[id]};
   res.render("urls_show", templateVars);
 });
 
