@@ -16,7 +16,7 @@ const urlDatabase = {
 };
 //Generate a Random Short URL ID
 const generateRandomString = () => {
-  return Math.random().toString(20).substring(2,6);
+  return Math.random().toString(20).substring(2,8);
 }
 
 // Home page says Hello
@@ -35,10 +35,6 @@ app.get("/urls", (req, res) => {
 });
 
 //sending response with HTML code
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
-
 app.get("/hello", (req, res) => {
   const templateVars = { greeting: "Hello World!" };
   res.render("hello_world", templateVars);
@@ -70,17 +66,23 @@ app.post("/urls", (req, res) => {
   urlDatabase[shortURL] = longURL;
   console.log(urlDatabase);
   console.log(req.body); // Log the POST request body to the console
-  res.send("ok")// Respond with 'Ok' (we will replace this)
-  // res.redirect(`/urls/${shortURL}`); 
+  res.send("ok")// Respond with 'Ok' (we will replace this) 
+  res.redirect('/urls/:id');//Redirect After Form Submission
 });
 
 //Adding a Second Route and Template
  app.get("/urls/:id", (req, res) => {
-  const id = req.params.id
+  const id = req.params.id;
   const templateVars = { id: id, longURL: urlDatabase[id]};
   res.render("urls_show", templateVars);
 });
 
+// Redirect Short URLs
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id;
+  const longURL = urlDatabase[id]
+  res.redirect(longURL); // Example: http://localhost:8080/u/b2xVn2 => http://www.lighthouselabs.ca
+});
 
 
 
