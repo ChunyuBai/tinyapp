@@ -1,7 +1,8 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
 const app = express();
-const morgan = require('morgan')
+const bcrypt = require("bcryptjs");
+
 
 const PORT = 8080; // default port 8080
 
@@ -11,13 +12,27 @@ app.set("view engine", "ejs");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());//cookie use
-app.use(morgan('dev'));
 
 // create a url database
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {longURL:"http://www.lighthouselabs.ca",
+              userID: "userRandomID"
+              },
+  "9sm5xK": {longURL:"http://www.google.com",
+             userID: "user2RandomID"
+              }
 };
+
+//create a urlsForuser function
+const urlsForUser = (id) => {
+  const userURLs = {};
+for(let key in urlDatabase){
+  if(urlDatabase[key].userID === id){
+    userURLs[key] = urlDatabase[key];
+  }
+} return userURLs;
+}
+
 // create our user database
 const users = {
   userRandomID: {
@@ -69,9 +84,14 @@ app.get("/urls.json", (req, res) => {
 app.get("/urls", (req, res) => {
   const userId = req.cookies["userId"];
   const user = users[userId];
+  if (!userId){
+    return res.status(400).send('<div>You need to login</div>');
+  }  
+  const url = urlsForUser(userId);
+  
   const templateVars = { 
     user: user,
-    urls: urlDatabase };
+    urls: url };
   res.render("urls_index", templateVars);
 });
 
@@ -130,33 +150,28 @@ app.post("/register",(req,res) => {
   const {password} = req.body;
   const result = lookupHelper(email);
   const user = lookupLogin(email,password)
-  if(user){
-    res.redirect('/urls')
-  }
   if(email.trim() === "" ){
-    res.status(400).send("empty email")
+    return res.status(400).send("empty email")
   } 
-   else if(result){
-    res.status(400).send("email has been used")
+  else if(result){
+    return res.status(400).send("email has been used")
   } else {
-    users[userID] = {id:userID,email,password};
+    res.cookie('userId',userID);
+    res.redirect("/urls");
+    return users[userID] = {id:userID,email,password};
   }
-  res.cookie('userId',userID);
-  res.redirect("/urls");
-  console.log(users);
-  console.log(result);
 })
 
 
 //Add a POST Route to Receive the Form Submission
 app.post("/urls", (req, res) => {
-  const userId = req.cookies.userId;
-  if (!userId){
+  const userID = req.cookies.userId;
+  if (!userID){
     return res.status(400).send('<div>You need to login</div>');
   }
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
+  urlDatabase[shortURL]={userID,longURL};
   console.log(urlDatabase);
   console.log(req.body); // Log the POST request body to the console/
   res.redirect(`/urls/${shortURL}`);//Redirect After Form Submission
@@ -166,8 +181,18 @@ app.post("/urls", (req, res) => {
 //Delete a url
 app.post("/urls/:id/delete", (req, res) => {
   const shortURL = req.params.id;
-  delete urlDatabase[shortURL]
-  res.redirect('/urls');//Redirect After Form Submission
+  const longURL = req.cookies.userId;
+  const userID = req.cookies.userId;
+  if(!userID){
+    res.status(403).send("please login")
+  } else if(urlDatabase[shortURL].longURL === undefined) {
+    res.status(403).send("URL not exist")
+  } else if(userID !== urlDatabase[shortURL].userID) {
+    res.status(403).send("do not own URL")
+  } else {
+    delete urlDatabase[shortURL]
+    res.redirect('/urls');//Redirect After Form Submission
+  }
 });
 
 
@@ -205,18 +230,30 @@ app.post("/logout",(req, res) => {
 app.post("/urls/:id/edit", (req, res) => {
   const shortURL = req.params.id;
   const longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
-  res.redirect('/urls');//Redirect After Form Submission
+  const userID = req.cookies.userId;
+  if(!userID){
+    res.status(403).send("please login")
+  } else if(urlDatabase[shortURL].longURL === undefined) {
+    res.status(403).send("URL not exist")
+  } else if(userID !== urlDatabase[shortURL].userID) {
+    res.status(403).send("do not own URL")
+  } else {  
+    urlDatabase[shortURL].longURL = longURL;
+    res.redirect('/urls');//Redirect After Form Submission
+  }
 });
 //Adding a Second Route and Template
  app.get("/urls/:shortURL", (req, res) => {
   const userId = req.cookies["userId"];
   const user = users[userId];
   const shortURL = req.params.shortURL;
+  if (!userId){
+    return res.status(400).send('<div>You need to login</div>');
+  }
   const templateVars = { 
     user,
     id: shortURL,
-    longURL: urlDatabase[shortURL]
+    longURL: urlDatabase[shortURL].longURL
   };
   res.render("urls_show", templateVars);
 });
@@ -224,7 +261,7 @@ app.post("/urls/:id/edit", (req, res) => {
 // Redirect Short URLs
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  const longURL = urlDatabase[id]
+  const longURL = urlDatabase[id].longURL
   res.redirect(longURL); // Example: http://localhost:8080/u/b2xVn2 => http://www.lighthouselabs.ca
 });
 
