@@ -22,13 +22,13 @@ const urlDatabase = {
 const users = {
   userRandomID: {
     id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
+    email: "a@a.com",
+    password: "123",
   },
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: "123",
   },
 };
 
@@ -99,18 +99,28 @@ app.get("/set", (req, res) => {
 //Add a GET Route to Show the Form
  app.get("/urls/new", (req, res) => {
     const userId = req.cookies["userId"];
-    const user = users[userId];
+    if (!userId) {
+    return res.redirect('/login');
+  }
+  const user = users[userId];
   res.render("urls_new",{
     user:user,
   });
 });
 
+
+
 //go to the register site
 app.get("/register",(req,res) => {
+  const userId = req.cookies.userId;
+  if (userId) {
+    return res.redirect('/urls');
+  }
   const templateVars = {
     user: null,
   }
   res.render("urls_register",templateVars);
+  // res.redirect('/urls');
 })
 
 //Create a Registration Handler
@@ -119,6 +129,10 @@ app.post("/register",(req,res) => {
   const {email} = req.body;
   const {password} = req.body;
   const result = lookupHelper(email);
+  const user = lookupLogin(email,password)
+  if(user){
+    res.redirect('/urls')
+  }
   if(email.trim() === "" ){
     res.status(400).send("empty email")
   } 
@@ -136,12 +150,16 @@ app.post("/register",(req,res) => {
 
 //Add a POST Route to Receive the Form Submission
 app.post("/urls", (req, res) => {
+  const userId = req.cookies.userId;
+  if (!userId){
+    return res.status(400).send('<div>You need to login</div>');
+  }
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
   console.log(urlDatabase);
   console.log(req.body); // Log the POST request body to the console/
-  res.redirect('/urls/:id');//Redirect After Form Submission
+  res.redirect(`/urls/${shortURL}`);//Redirect After Form Submission
 });
 
 
@@ -155,6 +173,10 @@ app.post("/urls/:id/delete", (req, res) => {
 
 //login a user
 app.get("/login",(req,res) => {
+  const userId = req.cookies.userId;
+  if (userId){
+   return res.redirect('/urls');
+  }
   const templateVars = {
     user: null,
   }
@@ -162,8 +184,6 @@ app.get("/login",(req,res) => {
 })
 
 app.post("/login", (req, res) => {
-  // const username = req.body.username;
-  
   const {email} = req.body;
   const {password} = req.body;
   const user = lookupLogin(email,password)
@@ -189,10 +209,15 @@ app.post("/urls/:id/edit", (req, res) => {
   res.redirect('/urls');//Redirect After Form Submission
 });
 //Adding a Second Route and Template
- app.get("/urls/:id", (req, res) => {
-  const id = req.params.id;
-  const templateVars = { username: req.cookies["userName"],
-    id: id, longURL: urlDatabase[id]};
+ app.get("/urls/:shortURL", (req, res) => {
+  const userId = req.cookies["userId"];
+  const user = users[userId];
+  const shortURL = req.params.shortURL;
+  const templateVars = { 
+    user,
+    id: shortURL,
+    longURL: urlDatabase[shortURL]
+  };
   res.render("urls_show", templateVars);
 });
 
