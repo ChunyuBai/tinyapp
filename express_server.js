@@ -57,9 +57,9 @@ const lookupHelper = (email) => {
   return null;
 }
 //create a look up function for login
-const lookupLogin = (email,password) => {
+const lookupLogin = (email) => {
   for(let key in users) {
-    if(users[key].email === email && users[key].password === password){
+    if(users[key].email === email){
       return users[key];
     }
   } return null;
@@ -148,6 +148,7 @@ app.post("/register",(req,res) => {
   const userID = generateRandomString();
   const {email} = req.body;
   const {password} = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   const result = lookupHelper(email);
   const user = lookupLogin(email,password)
   if(email.trim() === "" ){
@@ -158,7 +159,8 @@ app.post("/register",(req,res) => {
   } else {
     res.cookie('userId',userID);
     res.redirect("/urls");
-    return users[userID] = {id:userID,email,password};
+    users[userID] = {id:userID,email,password:hashedPassword};
+    console.log(users)
   }
 })
 
@@ -209,16 +211,21 @@ app.get("/login",(req,res) => {
 })
 
 app.post("/login", (req, res) => {
-  const {email} = req.body;
-  const {password} = req.body;
-  const user = lookupLogin(email,password)
+  const {email,password} = req.body;
+  // const hashedPassword = users.id.hashedPassword
+  // console.log("hashedPassword:",hashedPassword);
+  const user = lookupLogin(email)
   if(user){
     res.cookie('userId',user.id) 
   } else {
     res.status(403).send("not found user")
   }
+  if(!bcrypt.compareSync(password,user.password)){
+    res.status(403).send("wrong passwordd")
+  }
   res.redirect('/urls');//Redirect After Form Submission
 });
+
 //logout a user
 app.post("/logout",(req, res) => {
   res.clearCookie("userId");
